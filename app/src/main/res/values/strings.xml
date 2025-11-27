@@ -1,0 +1,28 @@
+<resources>
+    <string name="app_name">Agrimet</string>
+
+    <!-- Títulos para Bottom Navigation -->
+    <string name="title_home">Inicio</string>
+    <string name="title_alerts">Alertas</string>
+    <string name="title_weather">Clima</string>
+    <string name="title_irrigation">Riego</string>
+    <string name="title_data">Datos</string>
+
+    <!-- Descripciones de contenido para Accesibilidad (Text-to-Speech) -->
+    <string name="desc_weather_icon">Ícono del clima actual</string>
+    <string name="desc_alerts_icon">Ícono de alertas</string>
+    <string name="desc_irrigation_icon">Ícono de riego</string>
+    <string name="desc_alert_type_icon">Ícono que representa el tipo de alerta</string>
+    <string name="desc_current_weather_icon">Ícono grande que representa la condición climática actual</string>
+    <string name="desc_location_icon">Ícono de ubicación</string>
+    <string name="desc_sensor_icon">Ícono del tipo de sensor</string>
+    <string name="title_activity_main">MainActivity</string>
+    <string name="title_dashboard">Dashboard</string>
+    <string name="title_notifications">Notifications</string>
+
+    <!-- Irrigation Fragment -->
+    <string name="error_calculation">Error en el cálculo</string>
+    <string name="error_calculation_detail">Por favor, completa todos los pasos para ver el resultado.</string>
+    <string name="result_water_loss">Tu cultivo perdió %1$d mm de agua</string>
+    <string name="result_recommendation">Se recomienda regar con %1$d litros por metro cuadrado.</string>
+</resources>

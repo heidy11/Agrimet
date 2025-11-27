@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    tools:context=".ui.IrrigationFragment">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp">
+
+        <TextView
+            android:id="@+id/step_1_title"
+            style="@style/TextAppearance.Material3.TitleLarge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="1. ¿Qué cultivo tienes?"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <androidx.constraintlayout.helper.widget.Flow
+            android:id="@+id/crop_flow"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            app:constraint_referenced_ids="card_crop_potato, card_crop_corn, card_crop_quinoa"
+            app:flow_horizontalGap="12dp"
+            app:flow_maxElementsWrap="2"
+            app:flow_verticalGap="12dp"
+            app:flow_wrapMode="chain"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/step_1_title" />
+
+        <include
+            android:id="@+id/card_crop_potato"
+            layout="@layout/view_selectable_card"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            app:layout_constraintHorizontal_weight="1" />
+
+        <include
+            android:id="@+id/card_crop_corn"
+            layout="@layout/view_selectable_card"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            app:layout_constraintHorizontal_weight="1" />
+
+        <include
+            android:id="@+id/card_crop_quinoa"
+            layout="@layout/view_selectable_card"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            app:layout_constraintHorizontal_weight="1" />
+
+
+        <TextView
+            android:id="@+id/step_2_title"
+            style="@style/TextAppearance.Material3.TitleLarge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="2. ¿En qué etapa está?"
+            android:visibility="gone"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/crop_flow"
+            tools:visibility="visible" />
+
+        <androidx.constraintlayout.helper.widget.Flow
+            android:id="@+id/stage_flow"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            app:constraint_referenced_ids="card_stage_emergency, card_stage_dev, card_stage_bloom"
+            app:flow_horizontalGap="12dp"
+            app:flow_maxElementsWrap="2"
+            app:flow_verticalGap="12dp"
+            app:flow_wrapMode="chain"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/step_2_title" />
+
+        <include
+            android:id="@+id/card_stage_emergency"
+            layout="@layout/view_selectable_card"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            app:layout_constraintHorizontal_weight="1" />
+        <include
+            android:id="@+id/card_stage_dev"
+            layout="@layout/view_selectable_card"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            app:layout_constraintHorizontal_weight="1" />
+        <include
+            android:id="@+id/card_stage_bloom"
+            layout="@layout/view_selectable_card"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            app:layout_constraintHorizontal_weight="1" />
+
+
+        <TextView
+            android:id="@+id/step_3_title"
+            style="@style/TextAppearance.Material3.TitleLarge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="3. ¿Cuándo fue tu último riego?"
+            android:visibility="gone"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/stage_flow"
+            tools:visibility="visible" />
+
+        <androidx.constraintlayout.helper.widget.Flow
+            android:id="@+id/days_flow"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            app:constraint_referenced_ids="card_days_0,card_days_1,card_days_2,card_days_3,card_days_4,card_days_5"
+            app:flow_horizontalGap="12dp"
+            app:flow_maxElementsWrap="3"
+            app:flow_verticalGap="12dp"
+            app:flow_wrapMode="chain"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/step_3_title" />
+
+        <include
+            android:id="@+id/card_days_0"
+            layout="@layout/view_selectable_card"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            app:layout_constraintHorizontal_weight="1" />
+        <include
+            android:id="@+id/card_days_1"
+            layout="@layout/view_selectable_card"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            app:layout_constraintHorizontal_weight="1" />
+        <include
+            android:id="@+id/card_days_2"
+            layout="@layout/view_selectable_card"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            app:layout_constraintHorizontal_weight="1" />
+        <include
+            android:id="@+id/card_days_3"
+            layout="@layout/view_selectable_card"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            app:layout_constraintHorizontal_weight="1" />
+        <include
+            android:id="@+id/card_days_4"
+            layout="@layout/view_selectable_card"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            app:layout_constraintHorizontal_weight="1" />
+        <include
+            android:id="@+id/card_days_5"
+            layout="@layout/view_selectable_card"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            app:layout_constraintHorizontal_weight="1" />
+
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/result_card"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:visibility="gone"
+            app:cardBackgroundColor="?attr/colorTertiaryContainer"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/days_flow"
+            tools:visibility="visible">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:id="@+id/result_message"
+                    style="@style/TextAppearance.Material3.TitleLarge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textStyle="bold"
+                    tools:text="Tu cultivo perdió 30 mm de agua" />
+
+                <TextView
+                    android:id="@+id/result_detail"
+                    style="@style/TextAppearance.Material3.BodyMedium"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:gravity="center"
+                    android:lineSpacingMultiplier="1.2"
+                    tools:text="Se recomienda regar con 35 litros por metro cuadrado." />
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</ScrollView>
+
