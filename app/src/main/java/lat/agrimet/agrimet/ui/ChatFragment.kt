@@ -42,11 +42,11 @@ class ChatFragment : Fragment(), TextToSpeech.OnInitListener {
     private var currentlySpeakingId: String? = null
 
     // 🛑 CONFIGURACIÓN DE RED 🛑
-    private val BASE_URL = "http://142.44.243.119:9000/api/v1".toHttpUrl()
+    private val BASE_URL = "http://142.44.243.119:8000/api/v1".toHttpUrl()
 
     // Inicialización perezosa del servicio de chat
     private val chatService by lazy {
-        ChatService(HttpClient.client, BASE_URL,"mi_clave_secreta_123456")
+        ChatService(HttpClient.client, BASE_URL)
     }
 
     private val sessionId = UUID.randomUUID().toString()
