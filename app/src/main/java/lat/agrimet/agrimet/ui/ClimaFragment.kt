@@ -32,7 +32,7 @@ class ClimaFragment : Fragment(), TextToSpeech.OnInitListener {
     private var tts: TextToSpeech? = null
     private var currentlySpeakingId: String? = null
 
-    // 🛑 ARQUITECTURA MODULAR: Inicialización del servicio WeatherService 🛑
+
     private val BASE_URL = "http://142.44.243.119:8000/api/v1".toHttpUrl()
 
     private val weatherService by lazy {
@@ -58,7 +58,7 @@ class ClimaFragment : Fragment(), TextToSpeech.OnInitListener {
         super.onViewCreated(view, savedInstanceState)
         setupUI()
         setupListeners()
-        loadData() // Ahora llama a la API
+        loadData()
     }
 
     private fun setupUI() {
@@ -70,7 +70,7 @@ class ClimaFragment : Fragment(), TextToSpeech.OnInitListener {
             adapter = alertsAdapter
             isNestedScrollingEnabled = false
         }
-        // Nota: Asumo que tienes otro adapter para el pronóstico (ForecastAdapter)
+
     }
 
     private fun setupListeners() {
@@ -88,7 +88,7 @@ class ClimaFragment : Fragment(), TextToSpeech.OnInitListener {
 
 
         binding.alertChipGroup.setOnCheckedChangeListener { _, checkedId ->
-            // ✅ CORRECCIÓN 1: Convertir el ID del Chip directamente al Enum
+
             val severity: Alert.Severity? = when (checkedId) {
                 R.id.chip_critical -> Alert.Severity.CRITICAL
                 R.id.chip_warning -> Alert.Severity.WARNING
@@ -100,14 +100,14 @@ class ClimaFragment : Fragment(), TextToSpeech.OnInitListener {
     }
 
     private fun loadData() {
-        // ⭐️ LÓGICA DE CONEXIÓN API ⭐️
+
         lifecycleScope.launch {
 
-            // --- 1. Obtener Clima Actual (GET /weather/current) ---
+
             weatherService.getCurrentWeather(userLat, userLon)
                 .onSuccess { payload ->
                     Log.d("ClimaFragment", "Clima Actual OK: ${payload.location}")
-                    setWeather(payload) // Reemplaza la llamada mock
+                    setWeather(payload)
                 }
                 .onFailure { error ->
                     Log.e("ClimaFragment", "Error al obtener clima actual", error)
@@ -130,7 +130,7 @@ class ClimaFragment : Fragment(), TextToSpeech.OnInitListener {
             weatherService.getForecast(userLat, userLon)
                 .onSuccess { forecasts ->
                     Log.d("ClimaFragment", "Pronóstico OK: ${forecasts.size} días")
-                    // forecastAdapter.updateData(forecasts) // Descomentar cuando el adaptador esté listo
+
                 }
                 .onFailure { error ->
                     Log.e("ClimaFragment", "Error al obtener pronóstico", error)
@@ -141,7 +141,12 @@ class ClimaFragment : Fragment(), TextToSpeech.OnInitListener {
 
     override fun onInit(status: Int) {
         if (status == TextToSpeech.SUCCESS) {
-            val result = tts?.setLanguage(Locale("es", "BO"))
+            // ⭐️ INICIALIZACIÓN SEGURA DE TTS ⭐️
+            val ttsLocal = tts ?: return // Aseguramos que tts no es null
+
+            val result = ttsLocal.setLanguage(Locale("es", "BO"))
+
+
             if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
                 Log.e("TTS", "El idioma español no está soportado en este dispositivo.")
             }
@@ -176,7 +181,6 @@ class ClimaFragment : Fragment(), TextToSpeech.OnInitListener {
         currentlySpeakingId = alert.id
     }
 
-    //Construye y devuelve un string amigable con la información del clima.
     private fun getWeatherDataAsString(): String {
         return try {
             val temperature = binding.temperatureText.text.toString().replace("°C", "")
