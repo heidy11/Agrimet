@@ -2,6 +2,7 @@ package lat.agrimet.agrimet.network
 
 import lat.agrimet.agrimet.model.IrrigationRequest
 import lat.agrimet.agrimet.model.IrrigationResponse
+import lat.agrimet.agrimet.model.IrrigationResponseWrapper // ⭐️ Necesario para la respuesta anidada
 import okhttp3.HttpUrl
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -10,17 +11,22 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import java.io.IOException
 
-class IrrigationService(private val client: OkHttpClient, private val baseUrl: HttpUrl,private val apiKey: String) {
+/**
+ * Servicio dedicado al cálculo de riego (POST /irrigation/calculate).
+ * Implementa la autenticación con la clave de API (X-API-Key).
+ */
+class IrrigationService(
+    private val client: OkHttpClient,
+    private val baseUrl: HttpUrl,
+    private val apiKey: String
+) {
 
     private val JSON_MEDIA_TYPE = "application/json; charset=utf-8".toMediaType()
 
-    // --------------------------------------------------
-    // 4. POST /api/v1/irrigation/calculate (Cálculo de Riego)
-    // --------------------------------------------------
+
     suspend fun calculateIrrigation(request: IrrigationRequest): Result<IrrigationResponse> {
         return try {
             val jsonBody = JSONObject().apply {
-                // Mapear el modelo de petición a JSON para el cuerpo (Request Body)
                 put("cropType", request.cropType)
                 put("cropStage", request.cropStage)
                 put("daysSinceWatered", request.daysSinceWatered)
@@ -45,11 +51,19 @@ class IrrigationService(private val client: OkHttpClient, private val baseUrl: H
                 val jsonString = response.body?.string() ?: "{}"
                 val json = JSONObject(jsonString)
 
-                val payload = IrrigationResponse(
-                    waterLoss = json.getInt("waterLoss"),
-                    recommendation = json.getString("recommendation")
+                val resultadoJson = json.getJSONObject("resultado")
+
+                val finalResponse = IrrigationResponse(
+
+                    waterLoss = resultadoJson.getDouble("waterLoss"),
+
+                    recommendation = resultadoJson.getString("recommendation"),
+
+                    riskLevel = resultadoJson.optString("riskLevel", null)
                 )
-                Result.success(payload)
+
+
+                Result.success(finalResponse)
             }
         } catch (e: Exception) {
             Result.failure(e)
