@@ -33,9 +33,10 @@ class ClimaFragment : Fragment(), TextToSpeech.OnInitListener {
     private var currentlySpeakingId: String? = null
 
     // 🛑 ARQUITECTURA MODULAR: Inicialización del servicio WeatherService 🛑
-    private val BASE_URL = "http://142.44.243.119:8000/api/v1".toHttpUrl()
+    private val BASE_URL = "http://142.44.243.119:9000/api/v1".toHttpUrl()
 
     private val weatherService by lazy {
+        //Toast.makeText(requireContext(), "Conectando Server Weather"+BASE_URL, Toast.LENGTH_SHORT).show()
         WeatherService(HttpClient.client, BASE_URL)
     }
 
@@ -51,6 +52,9 @@ class ClimaFragment : Fragment(), TextToSpeech.OnInitListener {
     ): View {
         _binding = FragmentClimaBinding.inflate(inflater, container, false)
         tts = TextToSpeech(requireContext(), this)
+
+        //Toast.makeText(requireContext(), "Mensaje esta llegando", Toast.LENGTH_SHORT).show()
+
         return binding.root
     }
 
@@ -102,6 +106,8 @@ class ClimaFragment : Fragment(), TextToSpeech.OnInitListener {
     private fun loadData() {
         // ⭐️ LÓGICA DE CONEXIÓN API ⭐️
         lifecycleScope.launch {
+
+            //Toast.makeText(requireContext(), "Mensaje esta llegando", Toast.LENGTH_SHORT).show()
 
             // --- 1. Obtener Clima Actual (GET /weather/current) ---
             weatherService.getCurrentWeather(userLat, userLon)

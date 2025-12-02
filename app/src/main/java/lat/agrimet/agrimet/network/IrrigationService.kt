@@ -9,6 +9,8 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import java.io.IOException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class IrrigationService(private val client: OkHttpClient, private val baseUrl: HttpUrl,private val apiKey: String) {
 
@@ -18,41 +20,47 @@ class IrrigationService(private val client: OkHttpClient, private val baseUrl: H
     // 4. POST /api/v1/irrigation/calculate (Cálculo de Riego)
     // --------------------------------------------------
     suspend fun calculateIrrigation(request: IrrigationRequest): Result<IrrigationResponse> {
-        return try {
-            val jsonBody = JSONObject().apply {
-                // Mapear el modelo de petición a JSON para el cuerpo (Request Body)
-                put("cropType", request.cropType)
-                put("cropStage", request.cropStage)
-                put("daysSinceWatered", request.daysSinceWatered)
-            }.toString().toRequestBody(JSON_MEDIA_TYPE)
+        return withContext(Dispatchers.IO) {
+            try {
+                val jsonBody = JSONObject().apply {
+                    // Mapear el modelo de petición a JSON para el cuerpo (Request Body)
+                    put("cropType", request.cropType)
+                    put("cropStage", request.cropStage)
+                    put("daysSinceWatered", request.daysSinceWatered)
+                }.toString().toRequestBody(JSON_MEDIA_TYPE)
 
-            val url = baseUrl.newBuilder()
-                .addPathSegment("irrigation")
-                .addPathSegment("calculate")
-                .build()
+                val url = baseUrl.newBuilder()
+                    .addPathSegment("irrigation")
+                    .addPathSegment("calculate")
+                    .build()
 
-            val req = Request.Builder()
-                .url(url)
-                .post(jsonBody)
-                .header("X-API-key", apiKey)
-                .build()
+                val req = Request.Builder()
+                    .url(url)
+                    .post(jsonBody)
+                    .header("X-API-key", apiKey)
+                    .build()
 
-            client.newCall(req).execute().use { response ->
-                if (!response.isSuccessful) {
-                    return Result.failure(IOException("Irrigation API Error: HTTP ${response.code}"))
+                client.newCall(req).execute().use { response ->
+                    if (!response.isSuccessful) {
+                        return@withContext Result.failure(
+                            IOException("Irrigation API Error: HTTP ${response.code}")
+                        )
+                    }
+
+                    val jsonString = response.body?.string() ?: "{}"
+                    val json = JSONObject(jsonString)
+
+                    val payload = IrrigationResponse(
+                        waterLoss = json.getInt("waterLoss"),
+                        recommendation = json.getString("recommendation")
+                    )
+
+                    Result.success(payload)
                 }
-
-                val jsonString = response.body?.string() ?: "{}"
-                val json = JSONObject(jsonString)
-
-                val payload = IrrigationResponse(
-                    waterLoss = json.getInt("waterLoss"),
-                    recommendation = json.getString("recommendation")
-                )
-                Result.success(payload)
+            } catch (e: Exception) {
+                Result.failure(e)
             }
-        } catch (e: Exception) {
-            Result.failure(e)
         }
     }
+
 }

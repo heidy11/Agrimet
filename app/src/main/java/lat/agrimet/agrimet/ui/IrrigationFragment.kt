@@ -28,11 +28,11 @@ class IrrigationFragment : Fragment() {
     private val binding get() = _binding!!
 
 
-    private val BASE_URL = "http://142.44.243.119:8000/api/v1".toHttpUrl()
+    private val BASE_URL = "http://142.44.243.119:9000/api/v1".toHttpUrl()
 
 
     private val irrigationService by lazy {
-        IrrigationService(HttpClient.client, BASE_URL)
+        IrrigationService(HttpClient.client, BASE_URL, "mi_clave_secreta_123456")
     }
 
     private var selectedCropCard: View? = null

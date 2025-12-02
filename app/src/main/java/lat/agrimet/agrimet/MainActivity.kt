@@ -29,8 +29,8 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
 
-    private val tcpHost = "51.195.254.209"   // Ip address from the server
-    private val tcpPort = 8000
+    private val tcpHost = "142.44.243.119"   // Ip address from the server
+    private val tcpPort = 9010
 
     // Usa el scope por defecto del TcpClient (o podrías pasar lifecycleScope)
     private val client by lazy { TcpClient(tcpHost, tcpPort) }
@@ -62,6 +62,7 @@ class MainActivity : AppCompatActivity() {
 
         //<<---------------------------------------->>
         //FUNCIONES PARA MANEJAR LOS ELEMENTOS DEL TEXTVIEW
+        /*
         val navHost = supportFragmentManager
             .findFragmentById(R.id.nav_host_fragment_activity_main) as NavHostFragment
 
@@ -78,7 +79,7 @@ class MainActivity : AppCompatActivity() {
                 windKmh = "12",
                 uvIndex = "Alto"
             )
-        )
+        )*/
 
         //<<---------------------------------------->>
 
