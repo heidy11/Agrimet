@@ -33,7 +33,7 @@ class ClimaFragment : Fragment(), TextToSpeech.OnInitListener {
     private var currentlySpeakingId: String? = null
 
 
-    private val BASE_URL = "http://142.44.243.119:8000/api/v1".toHttpUrl()
+    private val BASE_URL = "http://142.44.243.119:9000/api/v1".toHttpUrl()
 
     private val weatherService by lazy {
         WeatherService(HttpClient.client, BASE_URL)

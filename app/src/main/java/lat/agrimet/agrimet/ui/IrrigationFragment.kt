@@ -28,11 +28,14 @@ class IrrigationFragment : Fragment() {
     private val binding get() = _binding!!
 
 
-    private val BASE_URL = "http://142.44.243.119:8000/api/v1".toHttpUrl()
+    private val BASE_URL = "http://142.44.243.119:9000/api/v1".toHttpUrl()
+    // ⭐️ AÑADIDO: Clave de API necesaria para el servicio ⭐️
+    private val AGRIMET_API_KEY = "AGRIMET_DEV_KEY"
 
 
     private val irrigationService by lazy {
-        IrrigationService(HttpClient.client, BASE_URL)
+        // ✅ CORRECCIÓN: Pasando la AGRIMET_API_KEY al constructor
+        IrrigationService(HttpClient.client, BASE_URL, AGRIMET_API_KEY)
     }
 
     private var selectedCropCard: View? = null

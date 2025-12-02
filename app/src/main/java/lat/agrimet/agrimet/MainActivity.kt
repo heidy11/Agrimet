@@ -30,7 +30,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
 
     private val tcpHost = "51.195.254.209"   // Ip address from the server
-    private val tcpPort = 8000
+    private val tcpPort = 9000
 
     // Usa el scope por defecto del TcpClient (o podrías pasar lifecycleScope)
     private val client by lazy { TcpClient(tcpHost, tcpPort) }
