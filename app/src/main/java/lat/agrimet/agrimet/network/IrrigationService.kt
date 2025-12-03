@@ -51,8 +51,9 @@ class IrrigationService(private val client: OkHttpClient, private val baseUrl: H
                     val json = JSONObject(jsonString)
 
                     val payload = IrrigationResponse(
-                        waterLoss = json.getInt("waterLoss"),
-                        recommendation = json.getString("recommendation")
+                        waterLoss = json.getDouble("waterLoss"),
+                        recommendation = json.getString("recommendation"),
+                        riskLevel = json.getString("riskLevel")
                     )
 
                     Result.success(payload)

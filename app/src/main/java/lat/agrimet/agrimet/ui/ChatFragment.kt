@@ -31,11 +31,9 @@ import java.util.UUID
 
 class ChatFragment : Fragment(), TextToSpeech.OnInitListener {
 
-    // Manejo del View Binding
     private var _binding: FragmentChatBinding? = null
     private val binding get() = _binding!!
 
-    // Componentes del Chat
     private lateinit var chatAdapter: ChatAdapter
     private lateinit var tts: TextToSpeech
     private var isTtsInitialized = false
@@ -44,14 +42,15 @@ class ChatFragment : Fragment(), TextToSpeech.OnInitListener {
     // 🛑 CONFIGURACIÓN DE RED 🛑
     private val BASE_URL = "http://142.44.243.119:8000/api/v1".toHttpUrl()
 
-    // Inicialización perezosa del servicio de chat
+    // ⭐️ CORRECCIÓN 1: La clave de API es necesaria para el constructor
+    private val AGRIMET_API_KEY = "mi_clave_secreta_123456"
+
+    // ✅ CORRECCIÓN 2: Pasando la clave al constructor del servicio
     private val chatService by lazy {
-        ChatService(HttpClient.client, BASE_URL)
+        ChatService(HttpClient.client, BASE_URL, AGRIMET_API_KEY)
     }
 
     private val sessionId = UUID.randomUUID().toString()
-
-    // Bandera para prevenir múltiples llamadas al mismo tiempo
     private var isBotResponding = false
 
 
@@ -74,6 +73,17 @@ class ChatFragment : Fragment(), TextToSpeech.OnInitListener {
             getChatResponse(nodeKey = "start", context = null)
         }
     }
+    override fun onStart() {
+        super.onStart()
+
+        // Verifica si la lista de mensajes está vacía. Si lo está, inicia la conversación.
+        // Esto resuelve el problema de "se reinicia al volver" (si la lista se vacía)
+        // o "se queda en blanco" (si la lista está vacía y no llama a 'start').
+        if (chatAdapter.itemCount == 0) {
+            updateOptions(emptyList())
+            getChatResponse(nodeKey = "start", context = null)
+        }
+    }
 
 
     private fun setupRecyclerView() {
@@ -90,20 +100,6 @@ class ChatFragment : Fragment(), TextToSpeech.OnInitListener {
     }
 
 
-    private fun sendUserMessageAndGetBotResponse(query: String) {
-
-
-        // 1. Mostrar mensaje del usuario en el chat
-        addMessageToChat(ChatMessage(text = query, sender = Sender.USER))
-
-        // 2. Ocultar opciones
-        updateOptions(emptyList())
-
-        // 3. Llamar al backend.
-        getChatResponse(nodeKey = "continue", context = query)
-    }
-
-
     private fun getChatResponse(nodeKey: String, context: String?) {
         if (isBotResponding) return
         isBotResponding = true
@@ -117,23 +113,18 @@ class ChatFragment : Fragment(), TextToSpeech.OnInitListener {
 
         lifecycleScope.launch {
             try {
-                // Llamando al servicio de chat
                 val result = chatService.getChatNode(request)
 
                 result.onSuccess { response: ChatNodeResponse ->
-                    // 1. Mostrar el mensaje del bot
                     addMessageToChat(ChatMessage(
                         text = response.messageContent.html,
                         sender = Sender.BOT,
                         speakableText = response.messageContent.speak
                     ))
 
-                    // 2. Mostrar las opciones de chip
                     updateOptions(response.options)
 
-                    // 3. Manejar el flujo automático de navegación
                     response.followUp?.let { followUpKey ->
-                        // Si hay un followUp, el bot navega automáticamente al siguiente nodo
                         getChatResponse(nodeKey = followUpKey, context = null)
                     }
 
@@ -142,7 +133,6 @@ class ChatFragment : Fragment(), TextToSpeech.OnInitListener {
                     showError("Error de conexión: Por favor, verifica la URL o el estado del servidor.")
                 }
             } finally {
-                // Liberar la bandera de respuesta
                 isBotResponding = false
             }
         }
@@ -158,11 +148,9 @@ class ChatFragment : Fragment(), TextToSpeech.OnInitListener {
         binding.optionsScrollView.visibility = View.VISIBLE
         options.forEach { option ->
             val chip = Chip(requireContext()).apply {
-                // Concatenar ícono y texto si el ícono existe
                 text = if (option.icon != null) "${option.icon} ${option.text}" else option.text
                 isClickable = true
                 isCheckable = false
-                // Estilo para hacerlo visualmente atractivo
                 setTextAppearance(com.google.android.material.R.style.TextAppearance_Material3_TitleMedium)
                 setOnClickListener {
                     onOptionSelected(option)
@@ -178,14 +166,11 @@ class ChatFragment : Fragment(), TextToSpeech.OnInitListener {
             tts.stop()
         }
 
-        // 1. Mostrar la opción seleccionada como mensaje del usuario
         val userMessageText = if (option.icon != null) "${option.icon} ${option.text}" else option.text
         addMessageToChat(ChatMessage(text = userMessageText, sender = Sender.USER))
 
-        // 2. Ocultar opciones
         updateOptions(emptyList())
 
-        // 3. Navegar al siguiente nodo usando la clave y el contexto de la opción
         getChatResponse(nodeKey = option.next, context = option.context)
     }
 
@@ -234,23 +219,19 @@ class ChatFragment : Fragment(), TextToSpeech.OnInitListener {
             return
         }
 
-        // Si ya está hablando el mismo texto, lo detenemos
         if (tts.isSpeaking && currentlySpeakingId == text) {
             tts.stop()
             currentlySpeakingId = null
             return
         }
 
-        // Obtener el texto plano (speakableText) del ChatMessage para TTS
         val cleanText = HtmlCompat.fromHtml(text, HtmlCompat.FROM_HTML_MODE_COMPACT).toString()
-        // Usamos el texto como Utterance ID
         tts.speak(cleanText, TextToSpeech.QUEUE_FLUSH, null, text)
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
-        // Uso de ::tts.isInitialized para evitar excepción de lateinit
         if (::tts.isInitialized) {
             tts.stop()
             tts.shutdown()
