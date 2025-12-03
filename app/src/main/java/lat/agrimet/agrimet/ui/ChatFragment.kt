@@ -76,9 +76,6 @@ class ChatFragment : Fragment(), TextToSpeech.OnInitListener {
     override fun onStart() {
         super.onStart()
 
-        // Verifica si la lista de mensajes está vacía. Si lo está, inicia la conversación.
-        // Esto resuelve el problema de "se reinicia al volver" (si la lista se vacía)
-        // o "se queda en blanco" (si la lista está vacía y no llama a 'start').
         if (chatAdapter.itemCount == 0) {
             updateOptions(emptyList())
             getChatResponse(nodeKey = "start", context = null)
