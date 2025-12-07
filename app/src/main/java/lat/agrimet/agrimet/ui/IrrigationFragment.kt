@@ -14,7 +14,6 @@ import kotlinx.coroutines.launch
 import lat.agrimet.agrimet.R
 import lat.agrimet.agrimet.databinding.FragmentIrrigationBinding
 import lat.agrimet.agrimet.databinding.ViewSelectableCardBinding
-
 import lat.agrimet.agrimet.model.IrrigationRequest
 import lat.agrimet.agrimet.model.IrrigationResponse
 import lat.agrimet.agrimet.network.HttpClient
@@ -27,12 +26,11 @@ class IrrigationFragment : Fragment() {
     private var _binding: FragmentIrrigationBinding? = null
     private val binding get() = _binding!!
 
-
     private val BASE_URL = "http://142.44.243.119:9000/api/v1".toHttpUrl()
-
+    private val AGRIMET_API_KEY = "mi_clave_secreta_123456"
 
     private val irrigationService by lazy {
-        IrrigationService(HttpClient.client, BASE_URL, "mi_clave_secreta_123456")
+        IrrigationService(HttpClient.client, BASE_URL, AGRIMET_API_KEY)
     }
 
     private var selectedCropCard: View? = null
@@ -115,7 +113,7 @@ class IrrigationFragment : Fragment() {
                 handleSelection(it, dayCards) { selectedView ->
                     selectedDaysCard = selectedView
                     calculateAndShowResult() // Llama a la API
-                    // No hacemos scroll aquí, lo hace la función calculateAndShowResult
+
                 }
             }
         }
@@ -147,6 +145,7 @@ class IrrigationFragment : Fragment() {
     }
 
     private fun scrollToView(view: View) {
+
         (binding.root as? ScrollView)?.post {
             (binding.root as ScrollView).smoothScrollTo(0, view.top)
         }
@@ -159,15 +158,13 @@ class IrrigationFragment : Fragment() {
         binding.daysFlow.visibility = View.GONE
         binding.resultCard.visibility = View.GONE
 
-
-
         selectedCropCard = null
         selectedStageCard = null
         selectedDaysCard = null
     }
 
     private fun calculateAndShowResult() {
-        // --- 1. Mapear la UI a Strings de la API ---
+
         val cropType = when (selectedCropCard?.id) {
             R.id.card_crop_potato -> "POTATO"
             R.id.card_crop_corn -> "CORN"
@@ -200,8 +197,8 @@ class IrrigationFragment : Fragment() {
             return
         }
 
-        // --- 2. Preparar UI para la llamada API ---
         binding.resultCard.visibility = View.VISIBLE
+
         binding.resultMessage.text = "Calculando..."
         binding.resultDetail.text = "Enviando datos al servidor para el cálculo..."
 
@@ -216,11 +213,13 @@ class IrrigationFragment : Fragment() {
 
                 binding.resultMessage.text = getString(R.string.result_water_loss, response.waterLoss)
                 binding.resultDetail.text = response.recommendation
+
                 Log.d("Irrigation", "Cálculo exitoso desde API: ${response.waterLoss}mm")
+
                 scrollToView(binding.resultCard)
 
             }.onFailure { error ->
-                // Mostrar error de conexión
+
                 binding.resultMessage.text = getString(R.string.error_calculation)
                 binding.resultDetail.text = "Error de conexión con el backend: ${error.localizedMessage}. Inténtalo de nuevo."
                 Log.e("Irrigation", "Fallo al calcular riego: ${error.localizedMessage}")
