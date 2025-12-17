@@ -16,6 +16,18 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
+
+        <!-- ⭐️ INICIO: SERVICIO DE MENSAJERÍA FCM (Módulo 2) ⭐️ -->
+        <!-- NOTA: Reemplazamos AgrimetMessagingService por FCMService. -->
+        <service
+            android:name=".notificacion.FCMService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+        <!-- ⭐️ FIN: SERVICIO DE MENSAJERÍA FCM ⭐️ -->
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -26,14 +38,9 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity
-            android:name=".AboutActivity"
-            android:exported="false" />
-        <activity
-            android:name=".ChatActivity"
-            android:exported="false">
-
-        </activity>
+        <!-- REMOVIDA: La referencia a AboutActivity que causaba el error de clase no encontrada. -->
+        <!-- REMOVIDA: La referencia a ChatActivity que causaba el error de clase no encontrada.
+        El Chatbot ahora se maneja dentro de ChatFragment/MainActivity. -->
     </application>
 
 </manifest>

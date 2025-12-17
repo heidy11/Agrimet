@@ -63,7 +63,26 @@ dependencies {
     // OkHttp para hacer requests HTTP
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     // Para usar JSONObject sin problemas
+    //noinspection DuplicatePlatformClasses
     implementation("org.json:json:20240303")
-    //Para trabajar con el workManager
+
+
+
+
+    // 1. GSON (Para SerializedName y JSON) - ¡OBLIGATORIO!
+    implementation("com.google.code.gson:gson:2.10.1")
+
+    // 2. CORRUTINAS (Aunque ya tengas algunas, estas aseguran las últimas versiones ktx)
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
+
+    // 3. FCM (Firebase Messaging)
+    implementation("com.google.firebase:firebase-messaging-ktx:23.4.0")
+
+    // 4. OKHTTP (El cliente HTTP que ya usas)
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+
+    // 5. WorkManager (Aunque no lo usemos ahora, lo necesitas para FCM futuro)
     implementation("androidx.work:work-runtime-ktx:2.9.0")
+
 }
