@@ -1,178 +1,103 @@
 package lat.agrimet.agrimet.notificacion
 
-import android.Manifest
-import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.os.Build
-import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import androidx.core.content.ContextCompat
 import lat.agrimet.agrimet.MainActivity
 import lat.agrimet.agrimet.R
-//alertas locales
 import lat.agrimet.agrimet.model.Alert
 
-
-// ⭐️ CONSTANTES PARA EL REPORTE DE EVENTOS (MÓDULO 2) ⭐️
+/**
+ * Constantes globales para evitar errores de redelaración.
+ * Si ya tienes un archivo de constantes, asegúrate de que estos valores no estén repetidos.
+ */
 object NotificationConstants {
-    const val EXTRA_NOTIFICATION_ID = "notification_id" // Clave para el ID de la notificación
-    const val EXTRA_EVENT_TYPE = "event_type"         // Clave para el tipo de evento
-    // Tipos de Eventos (Coinciden con el contrato de FastAPI/BD)
+    const val CHANNEL_ID = "agrimet_fcm_channel"
+    const val CHANNEL_NAME = "Notificaciones Agrimet"
+    const val EXTRA_NOTIFICATION_ID = "extra_notification_id"
+    const val EXTRA_EVENT_TYPE = "extra_event_type"
     const val EVENT_OPENED = "OPENED"
-    const val EVENT_DISMISSED = "DISMISSED"
-    const val EVENT_ACTION_TAKEN = "ACTION_TAKEN"
+    const val REQUEST_CODE = 100
 }
-
-// ⭐️ OBJETO DE CONFIGURACIÓN DEL CANAL (REQUERIDO) ⭐️
-object NotiConfig {
-    const val CHANNEL_ID = "agrimet_alerts_channel"
-    const val NOTIFICATION_REQUEST_CODE = 100
-}
-
 
 class NotiHelper(private val context: Context) {
-    private val nm = NotificationManagerCompat.from(context)
 
-    fun sendBigPictureWithAction(title: String, message: String, id: Int = 300) { //Codigo de error a enviar al servidor
-        val mainPending = PendingIntent.getActivity(
-            context, 0, Intent(context, MainActivity::class.java),
-            PendingIntent.FLAG_UPDATE_CURRENT or
-                    (if (Build.VERSION.SDK_INT >= 23) PendingIntent.FLAG_IMMUTABLE else 0)
-        )
-        val infoPending = PendingIntent.getActivity(
-            //context, 1, Intent(context, InfoActivity::class.java), //To create a new screenif it is required
-            context, 1, Intent(context, MainActivity::class.java), //To create a new screenif it is required
-            PendingIntent.FLAG_UPDATE_CURRENT or
-                    (if (Build.VERSION.SDK_INT >= 23) PendingIntent.FLAG_IMMUTABLE else 0)
-        )
-
-        val bigImage = BitmapFactory.decodeResource(context.resources, R.drawable.noti_imagen1)
-
-        val noti = NotificationCompat.Builder(context, NotiConfig.CHANNEL_ID)
-            .setSmallIcon(R.drawable.noti_stat_notification)
-            .setContentTitle(title)
-            .setContentText(message)
-            .setContentIntent(mainPending)
-            .setAutoCancel(true)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setCategory(NotificationCompat.CATEGORY_ALARM)
-            .setLargeIcon(bigImage)
-            .setStyle(
-                NotificationCompat.BigPictureStyle()
-                    .bigPicture(bigImage)
-                    .bigLargeIcon(null as Bitmap?)
-            )
-            .addAction(R.drawable.ic_info, "Más info", infoPending)
-            .build()
-
-        safeNotify(id, noti)   // usa el wrapper seguro
+    init {
+        createNotificationChannel()
     }
 
-    // ⭐️ FUNCIÓN CENTRAL PARA MOSTRAR PUSH DESDE FCM (Módulo 2) ⭐️
-    fun showFCMNotification(
-        notificationId: String,
-        title: String,
-        body: String,
-        priorityLevel: Int = NotificationCompat.PRIORITY_HIGH
-    ) {
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val importance = NotificationManager.IMPORTANCE_HIGH
+            val channel = NotificationChannel(
+                NotificationConstants.CHANNEL_ID,
+                NotificationConstants.CHANNEL_NAME,
+                importance
+            ).apply {
+                description = "Canal para alertas climáticas y notificaciones de Agrimet"
+            }
+            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
+        }
+    }
 
-        // --- 1. INTENT DE APERTURA (OPENED) ---
-        // Este Intent se activa cuando el usuario hace clic en el cuerpo de la notificación.
-        val openIntent = Intent(context, MainActivity::class.java).apply {
-            // ✅ INYECTAR DATOS DE REPORTE: MainActivity usará esto para llamar a FastAPI
+    /**
+     * Muestra una notificación recibida por FCM y configura el Intent para el reporte.
+     */
+    fun showFCMNotification(notificationId: String, title: String, body: String) {
+        // Intent que apunta a MainActivity
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            // Pasamos los datos para que MainActivity reporte el evento 'OPENED'
             putExtra(NotificationConstants.EXTRA_NOTIFICATION_ID, notificationId)
             putExtra(NotificationConstants.EXTRA_EVENT_TYPE, NotificationConstants.EVENT_OPENED)
-            // Aseguramos que el intent sea único para evitar conflictos
-            action = notificationId
         }
 
-        val flags = PendingIntent.FLAG_UPDATE_CURRENT or
-                (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0)
-
-        val mainPending = PendingIntent.getActivity(
+        val pendingIntent = PendingIntent.getActivity(
             context,
-            notificationId.hashCode(), // Código de solicitud único
-            openIntent,
-            flags
+            notificationId.hashCode(), // ID único para el PendingIntent
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        // --- 2. CONSTRUCCIÓN DE LA NOTIFICACIÓN ---
-        val noti = NotificationCompat.Builder(context, NotiConfig.CHANNEL_ID)
-            // Asumo que R.drawable.noti_stat_notification existe
-            .setSmallIcon(R.drawable.noti_stat_notification)
+        val builder = NotificationCompat.Builder(context, NotificationConstants.CHANNEL_ID)
+            .setSmallIcon(R.mipmap.ic_launcher) // Asegúrate de que este icono exista
             .setContentTitle(title)
             .setContentText(body)
-            .setContentIntent(mainPending) // El clic en el cuerpo reporta OPENED
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
-            .setPriority(priorityLevel)
-            .setCategory(NotificationCompat.CATEGORY_MESSAGE)
-            .build()
+            .setContentIntent(pendingIntent)
 
-        safeNotify(notificationId.hashCode(), noti)
+        try {
+            with(NotificationManagerCompat.from(context)) {
+                // Usamos el hash del ID de la notificación para que no se sobrepongan
+                notify(notificationId.hashCode(), builder.build())
+            }
+        } catch (e: SecurityException) {
+            e.printStackTrace()
+        }
     }
 
-
-    fun showAgrimetAlert(alert: lat.agrimet.agrimet.model.Alert,id: Int) {
-        val priority = when (alert.severity) {
-            lat.agrimet.agrimet.model.Alert.Severity.CRITICAL -> NotificationCompat.PRIORITY_MAX
-            lat.agrimet.agrimet.model.Alert.Severity.WARNING -> NotificationCompat.PRIORITY_HIGH
-            lat.agrimet.agrimet.model.Alert.Severity.INFO -> NotificationCompat.PRIORITY_DEFAULT
-        }
-        val mainPending = PendingIntent.getActivity(
-            context, 0, Intent(context, MainActivity::class.java),
-            PendingIntent.FLAG_UPDATE_CURRENT or
-                    (if (Build.VERSION.SDK_INT >= 23) PendingIntent.FLAG_IMMUTABLE else 0)
-        )
-        val infoPending = PendingIntent.getActivity(
-            context, 0, Intent(context, MainActivity::class.java),
-            PendingIntent.FLAG_UPDATE_CURRENT or
-                    (if (Build.VERSION.SDK_INT >= 23) PendingIntent.FLAG_IMMUTABLE else 0)
-        )
-        val bigImage = BitmapFactory.decodeResource(context.resources, R.drawable.noti_imagen1)
-        val noti = NotificationCompat.Builder(context, NotiConfig.CHANNEL_ID)
-            .setSmallIcon(R.drawable.noti_stat_notification)
+    /**
+     * Muestra una alerta climática (Módulo 1).
+     */
+    fun showAgrimetAlert(alert: Alert) {
+        val builder = NotificationCompat.Builder(context, NotificationConstants.CHANNEL_ID)
+            .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle(alert.title)
             .setContentText(alert.body)
-            .setContentIntent(mainPending)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setAutoCancel(true)
-            .setPriority(priority)
-            .setCategory(NotificationCompat.CATEGORY_ALARM)
-            .setLargeIcon(bigImage)
-            .setStyle(
-                NotificationCompat.BigPictureStyle()
-                    .bigPicture(bigImage)
-                    .setSummaryText(alert.body)
-            )
-            .addAction(R.drawable.ic_info, alert.actionText, infoPending)
-            .build()
-        safeNotify(alert.id.hashCode(), noti)
-    }
 
-    private fun safeNotify(id: Int, notification: Notification) {
-        // 1) ¿notificaciones habilitadas para la app?
-        if (!nm.areNotificationsEnabled()) {
-            Log.w("NotiHelper", "Notificaciones deshabilitadas para la app")
-            return
+        try {
+            NotificationManagerCompat.from(context).notify(alert.id.hashCode(), builder.build())
+        } catch (e: SecurityException) {
+            e.printStackTrace()
         }
-        // 2) En 33+ verifica permiso POST_NOTIFICATIONS
-        if (Build.VERSION.SDK_INT >= 33) {
-            val granted = ContextCompat.checkSelfPermission(
-                context, Manifest.permission.POST_NOTIFICATIONS
-            ) == PackageManager.PERMISSION_GRANTED
-            if (!granted) {
-                Log.w("NotiHelper", "Falta permiso POST_NOTIFICATIONS (API33+)")
-                return
-            }
-        }
-        // 3) Enviar
-        nm.notify(id, notification)
     }
-
-
 }
