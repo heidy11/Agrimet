@@ -13,8 +13,7 @@ import lat.agrimet.agrimet.R
 import lat.agrimet.agrimet.model.Alert
 
 /**
- * Constantes globales para evitar errores de redelaración.
- * Si ya tienes un archivo de constantes, asegúrate de que estos valores no estén repetidos.
+ * Constantes para evitar duplicidad de nombres en el proyecto.
  */
 object NotificationConstants {
     const val CHANNEL_ID = "agrimet_fcm_channel"
@@ -22,7 +21,6 @@ object NotificationConstants {
     const val EXTRA_NOTIFICATION_ID = "extra_notification_id"
     const val EXTRA_EVENT_TYPE = "extra_event_type"
     const val EVENT_OPENED = "OPENED"
-    const val REQUEST_CODE = 100
 }
 
 class NotiHelper(private val context: Context) {
@@ -39,7 +37,7 @@ class NotiHelper(private val context: Context) {
                 NotificationConstants.CHANNEL_NAME,
                 importance
             ).apply {
-                description = "Canal para alertas climáticas y notificaciones de Agrimet"
+                description = "Canal para alertas climáticas y notificaciones FCM"
             }
             val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.createNotificationChannel(channel)
@@ -47,44 +45,63 @@ class NotiHelper(private val context: Context) {
     }
 
     /**
-     * Muestra una notificación recibida por FCM y configura el Intent para el reporte.
+     * Muestra una notificación recibida por FCM (Módulo 2).
      */
     fun showFCMNotification(notificationId: String, title: String, body: String) {
-        // Intent que apunta a MainActivity
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-            // Pasamos los datos para que MainActivity reporte el evento 'OPENED'
             putExtra(NotificationConstants.EXTRA_NOTIFICATION_ID, notificationId)
             putExtra(NotificationConstants.EXTRA_EVENT_TYPE, NotificationConstants.EVENT_OPENED)
         }
 
         val pendingIntent = PendingIntent.getActivity(
             context,
-            notificationId.hashCode(), // ID único para el PendingIntent
+            notificationId.hashCode(),
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
         val builder = NotificationCompat.Builder(context, NotificationConstants.CHANNEL_ID)
-            .setSmallIcon(R.mipmap.ic_launcher) // Asegúrate de que este icono exista
+            .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle(title)
             .setContentText(body)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
 
-        try {
-            with(NotificationManagerCompat.from(context)) {
-                // Usamos el hash del ID de la notificación para que no se sobrepongan
-                notify(notificationId.hashCode(), builder.build())
-            }
-        } catch (e: SecurityException) {
-            e.printStackTrace()
-        }
+        notifySafe(notificationId.hashCode(), builder.build())
     }
 
     /**
-     * Muestra una alerta climática (Módulo 1).
+     * ⭐️ FUNCIÓN REQUERIDA POR EL WORKER ⭐️
+     * Muestra una notificación con estilo expandido.
+     */
+    fun sendBigPictureWithAction(title: String, message: String) {
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            System.currentTimeMillis().toInt(),
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val builder = NotificationCompat.Builder(context, NotificationConstants.CHANNEL_ID)
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setContentTitle(title)
+            .setContentText(message)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(message))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .setContentIntent(pendingIntent)
+
+        notifySafe(System.currentTimeMillis().toInt(), builder.build())
+    }
+
+    /**
+     * Muestra una alerta climática simple (Módulo 1).
      */
     fun showAgrimetAlert(alert: Alert) {
         val builder = NotificationCompat.Builder(context, NotificationConstants.CHANNEL_ID)
@@ -94,10 +111,16 @@ class NotiHelper(private val context: Context) {
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setAutoCancel(true)
 
+        notifySafe(alert.id.hashCode(), builder.build())
+    }
+
+    private fun notifySafe(id: Int, notification: android.app.Notification) {
         try {
-            NotificationManagerCompat.from(context).notify(alert.id.hashCode(), builder.build())
+            if (NotificationManagerCompat.from(context).areNotificationsEnabled()) {
+                NotificationManagerCompat.from(context).notify(id, notification)
+            }
         } catch (e: SecurityException) {
-            e.printStackTrace()
+            android.util.Log.e("NotiHelper", "Error de permisos de notificación", e)
         }
     }
 }
