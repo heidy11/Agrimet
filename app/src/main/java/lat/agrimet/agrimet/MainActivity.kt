@@ -31,6 +31,8 @@ import java.util.UUID
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
+
+    // Configuración del Backend para Notificaciones (Puerto 8000)
     private val BASE_URL = "http://142.44.243.119:8000/api/v1".toHttpUrl()
 
     private val notificationService by lazy {
@@ -42,16 +44,17 @@ class MainActivity : AppCompatActivity() {
     private val PREF_USER_ID = "anonymous_user_id"
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // ⭐️ PASO 1: Intentar inicialización manual al extremo
+        // Inicialización de Firebase con el nuevo archivo google-services.json
         try {
             FirebaseApp.initializeApp(this)
-            Log.i("FirebaseInit", "FirebaseApp inicializado correctamente.")
+            Log.i("FirebaseInit", "Firebase inicializado con éxito.")
         } catch (e: Exception) {
-            Log.e("FirebaseInit", "Error crítico al inicializar Firebase: ${e.message}")
+            Log.e("FirebaseInit", "Error al inicializar Firebase: ${e.message}")
         }
 
         super.onCreate(savedInstanceState)
 
+        // Gestión de identidad anónima persistente
         CURRENT_USER_ID = getOrCreateUserId()
 
         enableEdgeToEdge()
@@ -71,38 +74,59 @@ class MainActivity : AppCompatActivity() {
         )
         navView.setupWithNavController(navController)
 
-        // ⭐️ PASO 2: Verificación de Permisos (Android 13+)
+        // Configuración de Notificaciones (Módulo 2)
+        if (isFirebaseReady()) {
+            setupNotificationPermissions()
+            initializeFCMRegistration()
+            handleNotificationIntent(intent)
+        }
+    }
+
+    /**
+     * Verifica que Firebase esté correctamente configurado antes de solicitar servicios.
+     */
+    private fun isFirebaseReady(): Boolean {
+        return try {
+            FirebaseApp.getInstance()
+            true
+        } catch (e: IllegalStateException) {
+            Log.e("FCM", "Firebase no está listo. Verifica google-services.json y el plugin de Gradle.")
+            false
+        }
+    }
+
+    private fun setupNotificationPermissions() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
                 registerForActivityResult(ActivityResultContracts.RequestPermission()){}.launch(android.Manifest.permission.POST_NOTIFICATIONS)
             }
         }
-
-        // ⭐️ PASO 3: Ejecutar registro solo si Firebase está listo
-        initializeFCMRegistration()
-        handleNotificationIntent(intent)
     }
 
     private fun initializeFCMRegistration() {
-        try {
-            // Verificar si hay apps de Firebase inicializadas
-            if (FirebaseApp.getApps(this).isEmpty()) {
-                Log.e("FCM", "No se puede obtener token: Firebase no está configurado en el proyecto.")
-                return
+        FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+            if (!task.isSuccessful) {
+                Log.w("FCM", "Fallo al obtener el token de Firebase", task.exception)
+                return@addOnCompleteListener
             }
 
-            FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
-                if (!task.isSuccessful) {
-                    Log.w("FCM", "Fallo al obtener el token", task.exception)
-                    return@addOnCompleteListener
-                }
-                val token = task.result
-                lifecycleScope.launch {
-                    notificationService.registerToken(TokenRegistrationRequest(CURRENT_USER_ID, token, "Android"))
+            val token = task.result
+            Log.d("FCM", "Token obtenido: $token")
+
+            lifecycleScope.launch {
+                try {
+                    val request = TokenRegistrationRequest(CURRENT_USER_ID, token, "Android")
+                    val result = notificationService.registerToken(request)
+
+                    result.onSuccess {
+                        Log.i("FCM", "Token registrado exitosamente en el Backend.")
+                    }.onFailure { e ->
+                        Log.e("FCM", "Error al registrar token en el Backend: ${e.message}")
+                    }
+                } catch (e: Exception) {
+                    Log.e("Network", "Error de red: ${e.message}")
                 }
             }
-        } catch (e: Exception) {
-            Log.e("FCM", "Crash evitado en initializeFCMRegistration: ${e.message}")
         }
     }
 
@@ -130,13 +154,18 @@ class MainActivity : AppCompatActivity() {
 
     private fun reportNotificationEvent(notificationId: String, eventType: String) {
         lifecycleScope.launch {
-            val request = lat.agrimet.agrimet.model.notifications.NotificationReportRequest(
-                userId = CURRENT_USER_ID,
-                notificationId = notificationId,
-                eventType = eventType,
-                eventTimestamp = System.currentTimeMillis()
-            )
-            notificationService.reportEvent(request)
+            try {
+                val request = lat.agrimet.agrimet.model.notifications.NotificationReportRequest(
+                    userId = CURRENT_USER_ID,
+                    notificationId = notificationId,
+                    eventType = eventType,
+                    eventTimestamp = System.currentTimeMillis()
+                )
+                notificationService.reportEvent(request)
+                Log.i("Analytics", "Evento $eventType reportado para notificación $notificationId")
+            } catch (e: Exception) {
+                Log.e("Network", "Error reportando evento al backend: ${e.message}")
+            }
         }
     }
 
