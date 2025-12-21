@@ -40,7 +40,7 @@ class ChatFragment : Fragment(), TextToSpeech.OnInitListener {
     private var currentlySpeakingId: String? = null
 
     // 🛑 CONFIGURACIÓN DE RED 🛑
-    private val BASE_URL = "http://142.44.243.119:8000/api/v1".toHttpUrl()
+    private val BASE_URL = "http://142.44.243.119:9000/api/v1".toHttpUrl()
 
     // ⭐️ CORRECCIÓN 1: La clave de API es necesaria para el constructor
     private val AGRIMET_API_KEY = "mi_clave_secreta_123456"

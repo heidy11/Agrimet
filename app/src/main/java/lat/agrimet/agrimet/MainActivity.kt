@@ -19,6 +19,7 @@ import androidx.navigation.ui.setupWithNavController
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.firebase.FirebaseApp
 import com.google.firebase.messaging.FirebaseMessaging
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import lat.agrimet.agrimet.databinding.ActivityMainBinding
 import lat.agrimet.agrimet.model.notifications.TokenRegistrationRequest
@@ -32,8 +33,8 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
 
-    // Configuración del Backend para Notificaciones (Puerto 8000)
-    private val BASE_URL = "http://142.44.243.119:8000/api/v1".toHttpUrl()
+    // 🛑 PUERTO 9000 CONFIRMADO 🛑
+    private val BASE_URL = "http://142.44.243.119:9000/api/v1".toHttpUrl()
 
     private val notificationService by lazy {
         NotificationManagementService(HttpClient.client, BASE_URL)
@@ -44,17 +45,18 @@ class MainActivity : AppCompatActivity() {
     private val PREF_USER_ID = "anonymous_user_id"
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // Inicialización de Firebase con el nuevo archivo google-services.json
+        // Inicialización segura de Firebase
         try {
-            FirebaseApp.initializeApp(this)
-            Log.i("FirebaseInit", "Firebase inicializado con éxito.")
+            if (FirebaseApp.getApps(this).isEmpty()) {
+                FirebaseApp.initializeApp(this)
+            }
         } catch (e: Exception) {
-            Log.e("FirebaseInit", "Error al inicializar Firebase: ${e.message}")
+            Log.e("FirebaseInit", "Error en init manual: ${e.message}")
         }
 
         super.onCreate(savedInstanceState)
 
-        // Gestión de identidad anónima persistente
+        // Generar ID persistente de inmediato (No requiere red)
         CURRENT_USER_ID = getOrCreateUserId()
 
         enableEdgeToEdge()
@@ -74,23 +76,23 @@ class MainActivity : AppCompatActivity() {
         )
         navView.setupWithNavController(navController)
 
-        // Configuración de Notificaciones (Módulo 2)
+        // Lanzar registro FCM de forma aislada para que no bloquee otros servicios
         if (isFirebaseReady()) {
             setupNotificationPermissions()
-            initializeFCMRegistration()
-            handleNotificationIntent(intent)
+            lifecycleScope.launch(Dispatchers.IO) {
+                initializeFCMRegistration()
+            }
         }
+
+        handleNotificationIntent(intent)
     }
 
-    /**
-     * Verifica que Firebase esté correctamente configurado antes de solicitar servicios.
-     */
     private fun isFirebaseReady(): Boolean {
         return try {
             FirebaseApp.getInstance()
             true
-        } catch (e: IllegalStateException) {
-            Log.e("FCM", "Firebase no está listo. Verifica google-services.json y el plugin de Gradle.")
+        } catch (e: Exception) {
+            Log.w("FCM", "Firebase no está listo. El registro se saltará.")
             false
         }
     }
@@ -104,29 +106,24 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun initializeFCMRegistration() {
-        FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
-            if (!task.isSuccessful) {
-                Log.w("FCM", "Fallo al obtener el token de Firebase", task.exception)
-                return@addOnCompleteListener
-            }
+        try {
+            FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+                if (!task.isSuccessful) {
+                    // Aquí capturamos el error FIS sin que la app se cierre
+                    Log.w("FCM", "FIS no disponible. Revisa conexión/hora del emulador: ${task.exception?.message}")
+                    return@addOnCompleteListener
+                }
 
-            val token = task.result
-            Log.d("FCM", "Token obtenido: $token")
+                val token = task.result
+                Log.d("FCM", "Token obtenido: $token")
 
-            lifecycleScope.launch {
-                try {
+                lifecycleScope.launch {
                     val request = TokenRegistrationRequest(CURRENT_USER_ID, token, "Android")
-                    val result = notificationService.registerToken(request)
-
-                    result.onSuccess {
-                        Log.i("FCM", "Token registrado exitosamente en el Backend.")
-                    }.onFailure { e ->
-                        Log.e("FCM", "Error al registrar token en el Backend: ${e.message}")
-                    }
-                } catch (e: Exception) {
-                    Log.e("Network", "Error de red: ${e.message}")
+                    notificationService.registerToken(request)
                 }
             }
+        } catch (e: Exception) {
+            Log.e("FCM", "Excepción silenciada en FCM: ${e.message}")
         }
     }
 
@@ -145,8 +142,6 @@ class MainActivity : AppCompatActivity() {
             val notificationId = it.getStringExtra(NotificationConstants.EXTRA_NOTIFICATION_ID)
             val eventType = it.getStringExtra(NotificationConstants.EXTRA_EVENT_TYPE)
             if (notificationId != null && eventType == NotificationConstants.EVENT_OPENED) {
-                it.removeExtra(NotificationConstants.EXTRA_NOTIFICATION_ID)
-                it.removeExtra(NotificationConstants.EXTRA_EVENT_TYPE)
                 reportNotificationEvent(notificationId, eventType)
             }
         }
@@ -162,15 +157,15 @@ class MainActivity : AppCompatActivity() {
                     eventTimestamp = System.currentTimeMillis()
                 )
                 notificationService.reportEvent(request)
-                Log.i("Analytics", "Evento $eventType reportado para notificación $notificationId")
             } catch (e: Exception) {
-                Log.e("Network", "Error reportando evento al backend: ${e.message}")
+                Log.e("Report", "Fallo al reportar evento: ${e.message}")
             }
         }
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        setIntent(intent)
         handleNotificationIntent(intent)
     }
 }
