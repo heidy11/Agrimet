@@ -1,24 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
-        android:usesCleartextTraffic="true"
         android:allowBackup="true"
-        android:dataExtractionRules="@xml/data_extraction_rules"
-        android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/AppTheme">
+        android:theme="@style/AppTheme"
+        android:usesCleartextTraffic="true">
 
-        <!-- ⭐️ INICIO: SERVICIO DE MENSAJERÍA FCM (Módulo 2) ⭐️ -->
-        <!-- NOTA: Reemplazamos AgrimetMessagingService por FCMService. -->
         <service
             android:name=".notificacion.FCMService"
             android:exported="false">
@@ -26,21 +21,16 @@
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
         </service>
-        <!-- ⭐️ FIN: SERVICIO DE MENSAJERÍA FCM ⭐️ -->
 
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            >
+            android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <!-- REMOVIDA: La referencia a AboutActivity que causaba el error de clase no encontrada. -->
-        <!-- REMOVIDA: La referencia a ChatActivity que causaba el error de clase no encontrada.
-        El Chatbot ahora se maneja dentro de ChatFragment/MainActivity. -->
-    </application>
 
+    </application>
 </manifest>

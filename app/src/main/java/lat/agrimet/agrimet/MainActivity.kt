@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -45,18 +46,15 @@ class MainActivity : AppCompatActivity() {
     private val PREF_USER_ID = "anonymous_user_id"
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // Inicialización segura de Firebase
+        // 1. Inicialización protegida de Firebase
         try {
-            if (FirebaseApp.getApps(this).isEmpty()) {
-                FirebaseApp.initializeApp(this)
-            }
+            FirebaseApp.initializeApp(this)
         } catch (e: Exception) {
-            Log.e("FirebaseInit", "Error en init manual: ${e.message}")
+            Log.e("FirebaseInit", "Fallo inicial: ${e.message}")
         }
 
         super.onCreate(savedInstanceState)
 
-        // Generar ID persistente de inmediato (No requiere red)
         CURRENT_USER_ID = getOrCreateUserId()
 
         enableEdgeToEdge()
@@ -76,10 +74,12 @@ class MainActivity : AppCompatActivity() {
         )
         navView.setupWithNavController(navController)
 
-        // Lanzar registro FCM de forma aislada para que no bloquee otros servicios
-        if (isFirebaseReady()) {
-            setupNotificationPermissions()
-            lifecycleScope.launch(Dispatchers.IO) {
+        // 2. Ejecutar servicios de red de forma segura
+        setupNotificationPermissions()
+
+        // Lanzamos el registro en un hilo de fondo sin bloquear el inicio
+        lifecycleScope.launch(Dispatchers.IO) {
+            if (isFirebaseReady()) {
                 initializeFCMRegistration()
             }
         }
@@ -92,7 +92,7 @@ class MainActivity : AppCompatActivity() {
             FirebaseApp.getInstance()
             true
         } catch (e: Exception) {
-            Log.w("FCM", "Firebase no está listo. El registro se saltará.")
+            Log.w("FCM", "Firebase no está listo aún.")
             false
         }
     }
@@ -109,13 +109,13 @@ class MainActivity : AppCompatActivity() {
         try {
             FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
                 if (!task.isSuccessful) {
-                    // Aquí capturamos el error FIS sin que la app se cierre
-                    Log.w("FCM", "FIS no disponible. Revisa conexión/hora del emulador: ${task.exception?.message}")
+                    // Este es el error de FIS (Firebase Installation Service)
+                    Log.e("FCM", "Error FIS: El teléfono no tiene internet o Google bloqueó el servicio.")
                     return@addOnCompleteListener
                 }
 
                 val token = task.result
-                Log.d("FCM", "Token obtenido: $token")
+                Log.d("FCM", "Token exitoso: $token")
 
                 lifecycleScope.launch {
                     val request = TokenRegistrationRequest(CURRENT_USER_ID, token, "Android")
@@ -123,7 +123,7 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         } catch (e: Exception) {
-            Log.e("FCM", "Excepción silenciada en FCM: ${e.message}")
+            Log.e("FCM", "Crash evitado en FCM: ${e.message}")
         }
     }
 
@@ -158,7 +158,7 @@ class MainActivity : AppCompatActivity() {
                 )
                 notificationService.reportEvent(request)
             } catch (e: Exception) {
-                Log.e("Report", "Fallo al reportar evento: ${e.message}")
+                Log.e("Report", "Error en reporte: ${e.message}")
             }
         }
     }
